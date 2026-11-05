@@ -4,6 +4,7 @@ import android.content.ContentValues
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import java.math.BigDecimal
+import java.math.RoundingMode
 
 /**
  * Adds wallet cash movements and fixed-income application lots.
@@ -102,52 +103,139 @@ val MIGRATION_1_2 = object : Migration(1, 2) {
     }
 }
 
+private data class LegacyLotState(
+    val id: String,
+    val assetId: String,
+    val purchaseTransactionId: String,
+    val originalQuantity: BigDecimal,
+    var remainingQuantity: BigDecimal,
+    val principalAmount: BigDecimal,
+    var remainingPrincipalAmount: BigDecimal,
+    val acquisitionFees: BigDecimal,
+    val annualRate: String?,
+    val maturityDate: Long?,
+    val createdAt: Long,
+)
+
 private fun migrateLegacyFixedIncomePurchases(database: SupportSQLiteDatabase) {
     database.query(
         """
-        SELECT t.id, t.assetId, t.quantity, t.unitPrice, t.fees, t.createdAt,
-               a.annualRate, a.maturityDate
+        SELECT t.id, t.assetId, t.type, t.quantity, t.unitPrice, t.fees, t.date,
+               t.createdAt, a.annualRate, a.maturityDate
         FROM asset_transactions AS t
         INNER JOIN assets AS a ON a.id = t.assetId
-        WHERE a.type = 'FIXED_INCOME' AND t.type = 'BUY'
-        ORDER BY t.date ASC, t.createdAt ASC, t.id ASC
+        WHERE a.type = 'FIXED_INCOME' AND t.type IN ('BUY', 'SELL')
+        ORDER BY t.assetId ASC, t.date ASC, t.createdAt ASC, t.id ASC
         """.trimIndent(),
     ).use { cursor ->
-        val idIndex = cursor.getColumnIndexOrThrow("id")
-        val assetIdIndex = cursor.getColumnIndexOrThrow("assetId")
-        val quantityIndex = cursor.getColumnIndexOrThrow("quantity")
-        val unitPriceIndex = cursor.getColumnIndexOrThrow("unitPrice")
-        val feesIndex = cursor.getColumnIndexOrThrow("fees")
-        val createdAtIndex = cursor.getColumnIndexOrThrow("createdAt")
-        val annualRateIndex = cursor.getColumnIndexOrThrow("annualRate")
-        val maturityDateIndex = cursor.getColumnIndexOrThrow("maturityDate")
+        val lotsByAsset = mutableMapOf<String, MutableList<LegacyLotState>>()
+        val indexes = (0 until cursor.columnCount).associateBy { cursor.getColumnName(it) }
 
         while (cursor.moveToNext()) {
-            val quantity = BigDecimal(cursor.getString(quantityIndex))
-            val unitPrice = BigDecimal(cursor.getString(unitPriceIndex))
-            val principal = quantity.multiply(unitPrice)
-            val values = ContentValues().apply {
-                put("id", "legacy-lot-${cursor.getString(idIndex)}")
-                put("assetId", cursor.getString(assetIdIndex))
-                put("purchaseTransactionId", cursor.getString(idIndex))
-                put("originalQuantity", quantity.toPlainString())
-                put("remainingQuantity", quantity.toPlainString())
-                put("principalAmount", principal.toPlainString())
-                put("remainingPrincipalAmount", principal.toPlainString())
-                put("acquisitionFees", cursor.getString(feesIndex))
-                if (cursor.isNull(annualRateIndex)) {
-                    putNull("annualRate")
-                } else {
-                    put("annualRate", cursor.getString(annualRateIndex))
+            fun string(name: String) = cursor.getString(indexes.getValue(name))
+            fun long(name: String) = cursor.getLong(indexes.getValue(name))
+            fun nullableLong(name: String): Long? =
+                indexes.getValue(name).let { if (cursor.isNull(it)) null else cursor.getLong(it) }
+            fun nullableString(name: String): String? =
+                indexes.getValue(name).let { if (cursor.isNull(it)) null else cursor.getString(it) }
+
+            val transactionId = string("id")
+            val assetId = string("assetId")
+            val quantity = BigDecimal(string("quantity"))
+            val lots = lotsByAsset.getOrPut(assetId) { mutableListOf() }
+
+            if (string("type") == "BUY") {
+                val principal = quantity.multiply(BigDecimal(string("unitPrice")))
+                val lot = LegacyLotState(
+                    id = "legacy-lot-$transactionId",
+                    assetId = assetId,
+                    purchaseTransactionId = transactionId,
+                    originalQuantity = quantity,
+                    remainingQuantity = quantity,
+                    principalAmount = principal,
+                    remainingPrincipalAmount = principal,
+                    acquisitionFees = BigDecimal(string("fees")),
+                    annualRate = nullableString("annualRate"),
+                    maturityDate = nullableLong("maturityDate"),
+                    createdAt = long("createdAt"),
+                )
+                lots += lot
+                insertLegacyLot(database, lot)
+            } else {
+                val salePrice = BigDecimal(string("unitPrice"))
+                val saleFees = BigDecimal(string("fees"))
+                var quantityToAllocate = quantity
+                var quantityAllocated = BigDecimal.ZERO
+
+                for (lot in lots) {
+                    if (quantityToAllocate.signum() <= 0) break
+                    if (lot.remainingQuantity.signum() <= 0) continue
+
+                    val allocated = quantityToAllocate.min(lot.remainingQuantity)
+                    val principalAllocated = if (allocated.compareTo(lot.remainingQuantity) == 0) {
+                        lot.remainingPrincipalAmount
+                    } else {
+                        lot.remainingPrincipalAmount.multiply(allocated)
+                            .divide(lot.remainingQuantity, 16, RoundingMode.HALF_EVEN)
+                    }
+                    val saleFraction = allocated.divide(quantity, 16, RoundingMode.HALF_EVEN)
+                    val redemptionAmount = allocated.multiply(salePrice)
+                    val allocatedFees = saleFees.multiply(saleFraction)
+
+                    val allocationValues = ContentValues().apply {
+                        put("id", "legacy-allocation-$transactionId-${lot.id}")
+                        put("redemptionTransactionId", transactionId)
+                        put("lotId", lot.id)
+                        put("quantity", allocated.toPlainString())
+                        put("principalAmount", principalAllocated.toPlainString())
+                        put("redemptionAmount", redemptionAmount.toPlainString())
+                        put("fees", allocatedFees.toPlainString())
+                        put("createdAt", long("createdAt"))
+                    }
+                    database.insert("fixed_income_redemption_allocations", 0, allocationValues)
+
+                    lot.remainingQuantity = lot.remainingQuantity.subtract(allocated)
+                    lot.remainingPrincipalAmount =
+                        lot.remainingPrincipalAmount.subtract(principalAllocated)
+                    updateLegacyLotBalance(database, lot)
+                    quantityToAllocate = quantityToAllocate.subtract(allocated)
+                    quantityAllocated = quantityAllocated.add(allocated)
                 }
-                if (cursor.isNull(maturityDateIndex)) {
-                    putNull("maturityDate")
-                } else {
-                    put("maturityDate", cursor.getLong(maturityDateIndex))
-                }
-                put("createdAt", cursor.getLong(createdAtIndex))
+                // If the legacy history contains an out-of-order/oversized sale,
+                // keep the original transaction untouched. The missing allocation
+                // is detectable by comparing allocation quantities with the SELL.
             }
-            database.insert("fixed_income_lots", 0, values)
         }
     }
+}
+
+private fun insertLegacyLot(database: SupportSQLiteDatabase, lot: LegacyLotState) {
+    val values = ContentValues().apply {
+        put("id", lot.id)
+        put("assetId", lot.assetId)
+        put("purchaseTransactionId", lot.purchaseTransactionId)
+        put("originalQuantity", lot.originalQuantity.toPlainString())
+        put("remainingQuantity", lot.remainingQuantity.toPlainString())
+        put("principalAmount", lot.principalAmount.toPlainString())
+        put("remainingPrincipalAmount", lot.remainingPrincipalAmount.toPlainString())
+        put("acquisitionFees", lot.acquisitionFees.toPlainString())
+        if (lot.annualRate == null) putNull("annualRate") else put("annualRate", lot.annualRate)
+        if (lot.maturityDate == null) putNull("maturityDate") else put("maturityDate", lot.maturityDate)
+        put("createdAt", lot.createdAt)
+    }
+    database.insert("fixed_income_lots", 0, values)
+}
+
+private fun updateLegacyLotBalance(database: SupportSQLiteDatabase, lot: LegacyLotState) {
+    val values = ContentValues().apply {
+        put("remainingQuantity", lot.remainingQuantity.toPlainString())
+        put("remainingPrincipalAmount", lot.remainingPrincipalAmount.toPlainString())
+    }
+    database.update(
+        "fixed_income_lots",
+        0,
+        values,
+        "id = ?",
+        arrayOf(lot.id),
+    )
 }
