@@ -85,7 +85,7 @@ class Migration1To2Test {
             ).use { cursor ->
                 assertTrue(cursor.moveToFirst())
                 assertEquals("300.30", cursor.getString(0))
-                assertEquals("0", cursor.getString(1))
+                assertEquals("0.00", cursor.getString(1))
                 assertEquals("10.5", cursor.getString(2))
                 assertEquals(1, cursor.getInt(3))
             }
