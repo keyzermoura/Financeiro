@@ -3,6 +3,7 @@ package br.com.carteirainvest.data.local
 import androidx.room.TypeConverter
 import br.com.carteirainvest.domain.model.AlertType
 import br.com.carteirainvest.domain.model.AssetType
+import br.com.carteirainvest.domain.model.CashTransactionType
 import br.com.carteirainvest.domain.model.QuoteSource
 import br.com.carteirainvest.domain.model.TransactionType
 import java.math.BigDecimal
@@ -28,6 +29,13 @@ class Converters {
     @TypeConverter
     fun stringToAssetType(value: String): AssetType =
         runCatching { AssetType.valueOf(value) }.getOrDefault(AssetType.STOCK)
+
+    @TypeConverter
+    fun cashTransactionTypeToString(value: CashTransactionType): String = value.name
+
+    @TypeConverter
+    fun stringToCashTransactionType(value: String): CashTransactionType =
+        CashTransactionType.valueOf(value)
 
     @TypeConverter
     fun transactionTypeToString(value: TransactionType): String = value.name
