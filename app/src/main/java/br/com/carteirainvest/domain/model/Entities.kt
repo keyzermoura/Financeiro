@@ -75,6 +75,7 @@ data class FixedIncomeLot(
     val annualRate: BigDecimal?,
     val maturityDate: LocalDate?,
     val createdAt: Long,
+    val isMigrated: Boolean = false,
 )
 
 /** Persisted link between a partial/full redemption and the lot it consumes. */
