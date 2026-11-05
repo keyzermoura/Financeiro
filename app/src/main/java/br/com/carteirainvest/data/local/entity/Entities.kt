@@ -249,3 +249,32 @@ data class FixedIncomeLotEntity(
     val maturityDate: LocalDate?,
     val createdAt: Long,
 )
+
+@Entity(
+    tableName = "fixed_income_redemption_allocations",
+    foreignKeys = [
+        ForeignKey(
+            entity = TransactionEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["redemptionTransactionId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+        ForeignKey(
+            entity = FixedIncomeLotEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["lotId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+    indices = [Index("redemptionTransactionId"), Index("lotId")],
+)
+data class FixedIncomeRedemptionAllocationEntity(
+    @PrimaryKey val id: String,
+    val redemptionTransactionId: String,
+    val lotId: String,
+    val quantity: BigDecimal,
+    val principalAmount: BigDecimal,
+    val redemptionAmount: BigDecimal,
+    val fees: BigDecimal,
+    val createdAt: Long,
+)
