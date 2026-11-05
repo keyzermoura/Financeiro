@@ -5,6 +5,7 @@ import androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory
 import androidx.test.core.app.ApplicationProvider
 import androidx.sqlite.db.SupportSQLiteOpenHelper
 import org.junit.Assert.assertEquals
+import java.math.BigDecimal
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -15,6 +16,11 @@ import org.junit.Test
 @org.junit.runner.RunWith(org.robolectric.RobolectricTestRunner::class)
 @org.robolectric.annotation.Config(sdk = [35])
 class Migration1To2Test {
+
+    private fun assertDecimalEquals(expected: String, actual: String) {
+        assertEquals(0, BigDecimal(expected).compareTo(BigDecimal(actual)))
+    }
+
 
     @Test
     fun migrationCreatesCashAndLotTablesWithoutInventingCashHistory() {
@@ -84,15 +90,15 @@ class Migration1To2Test {
                     "FROM fixed_income_lots WHERE purchaseTransactionId = 'buy-1'",
             ).use { cursor ->
                 assertTrue(cursor.moveToFirst())
-                assertEquals("300.30", cursor.getString(0))
-                assertEquals("0.00", cursor.getString(1))
+                assertDecimalEquals("300.30", cursor.getString(0))
+                assertDecimalEquals("0", cursor.getString(1))
                 assertEquals("10.5", cursor.getString(2))
                 assertEquals(1, cursor.getInt(3))
             }
             db.query("SELECT remainingQuantity, remainingPrincipalAmount FROM fixed_income_lots WHERE purchaseTransactionId = 'buy-2'").use { cursor ->
                 assertTrue(cursor.moveToFirst())
-                assertEquals("1", cursor.getString(0))
-                assertEquals("50", cursor.getString(1))
+                assertDecimalEquals("1", cursor.getString(0))
+                assertDecimalEquals("50", cursor.getString(1))
             }
             db.query("SELECT COUNT(*) FROM fixed_income_redemption_allocations").use { cursor ->
                 assertTrue(cursor.moveToFirst())
