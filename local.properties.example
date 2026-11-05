@@ -1,0 +1,6 @@
+# Add this file only on your machine; it is ignored by git.
+# sdk.dir=C\:\\Users\\SeuUsuario\\AppData\\Local\\Android\\Sdk
+#
+# Optional API credentials (free tiers available):
+# BRAPI_TOKEN=seu_token_brapi
+# COINGECKO_API_KEY=sua_chave_demo_coingecko
