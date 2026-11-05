@@ -4,6 +4,8 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import br.com.carteirainvest.data.local.dao.AlertDao
+import br.com.carteirainvest.data.local.dao.CashTransactionDao
+import br.com.carteirainvest.data.local.dao.FixedIncomeLotDao
 import br.com.carteirainvest.data.local.dao.AssetDao
 import br.com.carteirainvest.data.local.dao.ExchangeRateDao
 import br.com.carteirainvest.data.local.dao.QuoteDao
@@ -13,6 +15,8 @@ import br.com.carteirainvest.data.local.dao.TransactionDao
 import br.com.carteirainvest.data.local.dao.UserDao
 import br.com.carteirainvest.data.local.dao.WalletDao
 import br.com.carteirainvest.data.local.entity.AlertRuleEntity
+import br.com.carteirainvest.data.local.entity.CashTransactionEntity
+import br.com.carteirainvest.data.local.entity.FixedIncomeLotEntity
 import br.com.carteirainvest.data.local.entity.AssetEntity
 import br.com.carteirainvest.data.local.entity.ExchangeRateEntity
 import br.com.carteirainvest.data.local.entity.PortfolioSnapshotEntity
@@ -33,8 +37,10 @@ import br.com.carteirainvest.data.local.entity.WalletEntity
         PortfolioSnapshotEntity::class,
         AlertRuleEntity::class,
         ExchangeRateEntity::class,
+        CashTransactionEntity::class,
+        FixedIncomeLotEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -48,6 +54,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun snapshotDao(): SnapshotDao
     abstract fun alertDao(): AlertDao
     abstract fun exchangeRateDao(): ExchangeRateDao
+    abstract fun cashTransactionDao(): CashTransactionDao
+    abstract fun fixedIncomeLotDao(): FixedIncomeLotDao
 
     companion object {
         const val NAME = "carteira_invest.db"
