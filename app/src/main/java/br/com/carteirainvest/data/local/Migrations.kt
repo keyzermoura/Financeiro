@@ -70,6 +70,34 @@ val MIGRATION_1_2 = object : Migration(1, 2) {
                 "ON fixed_income_lots(assetId)",
         )
 
+        database.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS fixed_income_redemption_allocations (
+                id TEXT NOT NULL,
+                redemptionTransactionId TEXT NOT NULL,
+                lotId TEXT NOT NULL,
+                quantity TEXT NOT NULL,
+                principalAmount TEXT NOT NULL,
+                redemptionAmount TEXT NOT NULL,
+                fees TEXT NOT NULL,
+                createdAt INTEGER NOT NULL,
+                PRIMARY KEY(id),
+                FOREIGN KEY(redemptionTransactionId) REFERENCES asset_transactions(id)
+                    ON UPDATE NO ACTION ON DELETE CASCADE,
+                FOREIGN KEY(lotId) REFERENCES fixed_income_lots(id)
+                    ON UPDATE NO ACTION ON DELETE CASCADE
+            )
+            """.trimIndent(),
+        )
+        database.execSQL(
+            "CREATE INDEX IF NOT EXISTS index_fixed_income_redemption_allocations_redemptionTransactionId " +
+                "ON fixed_income_redemption_allocations(redemptionTransactionId)",
+        )
+        database.execSQL(
+            "CREATE INDEX IF NOT EXISTS index_fixed_income_redemption_allocations_lotId " +
+                "ON fixed_income_redemption_allocations(lotId)",
+        )
+
         migrateLegacyFixedIncomePurchases(database)
     }
 }
