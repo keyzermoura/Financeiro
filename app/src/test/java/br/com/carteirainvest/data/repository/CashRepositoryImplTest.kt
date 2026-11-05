@@ -7,6 +7,7 @@ import br.com.carteirainvest.domain.model.CashTransaction
 import br.com.carteirainvest.domain.model.CashTransactionType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.Dispatchers
 import org.junit.Assert.assertEquals
