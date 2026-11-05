@@ -230,6 +230,7 @@ fun FixedIncomeLotEntity.toDomain() = FixedIncomeLot(
     annualRate = annualRate,
     maturityDate = maturityDate,
     createdAt = createdAt,
+    isMigrated = isMigrated,
 )
 
 fun FixedIncomeLot.toEntity() = FixedIncomeLotEntity(
@@ -244,6 +245,7 @@ fun FixedIncomeLot.toEntity() = FixedIncomeLotEntity(
     annualRate = annualRate,
     maturityDate = maturityDate,
     createdAt = createdAt,
+    isMigrated = isMigrated,
 )
 
 fun FixedIncomeRedemptionAllocationEntity.toDomain() = FixedIncomeRedemptionAllocation(
