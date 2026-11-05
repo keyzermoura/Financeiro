@@ -5,6 +5,8 @@ import br.com.carteirainvest.data.local.dao.CashTransactionDao
 import br.com.carteirainvest.data.local.toDomain
 import br.com.carteirainvest.data.local.toEntity
 import br.com.carteirainvest.domain.model.CashTransaction
+import br.com.carteirainvest.domain.model.CashTransactionType
+import br.com.carteirainvest.domain.exception.ValidationException
 import br.com.carteirainvest.domain.repository.CashRepository
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
@@ -35,10 +37,10 @@ class CashRepositoryImpl @Inject constructor(
     override suspend fun addTransaction(transaction: CashTransaction) = withContext(ioDispatcher) {
         writeMutex.withLock {
             val current = cashTransactionDao.getByWallet(transaction.walletId).map { it.toDomain() }
-            if (transaction.type.name == "OPENING_BALANCE" &&
-                current.any { it.type.name == "OPENING_BALANCE" }
+            if (transaction.type == CashTransactionType.OPENING_BALANCE &&
+                current.any { it.type == CashTransactionType.OPENING_BALANCE }
             ) {
-                throw IllegalArgumentException("O saldo inicial desta carteira já foi cadastrado.")
+                throw ValidationException("O saldo inicial desta carteira já foi cadastrado.")
             }
             val candidate = (current + transaction).sortedWith(
                 compareBy<CashTransaction> { it.date }.thenBy { it.createdAt }.thenBy { it.id },
