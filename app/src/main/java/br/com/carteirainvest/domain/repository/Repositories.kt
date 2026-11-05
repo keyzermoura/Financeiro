@@ -1,6 +1,7 @@
 package br.com.carteirainvest.domain.repository
 
 import br.com.carteirainvest.domain.model.Asset
+import br.com.carteirainvest.domain.model.CashTransaction
 import br.com.carteirainvest.domain.model.AssetType
 import br.com.carteirainvest.domain.model.Transaction
 import br.com.carteirainvest.domain.model.User
@@ -18,7 +19,13 @@ interface AuthRepository {
     fun setBiometricEnabled(enabled: Boolean)
 }
 
-interface CashRepository {\n    fun observeTransactions(walletId: String): Flow<List<CashTransaction>>\n    suspend fun getTransactions(walletId: String): List<CashTransaction>\n    suspend fun addTransaction(transaction: CashTransaction)\n}\n\ninterface WalletRepository {
+interface CashRepository {
+    fun observeTransactions(walletId: String): Flow<List<CashTransaction>>
+    suspend fun getTransactions(walletId: String): List<CashTransaction>
+    suspend fun addTransaction(transaction: CashTransaction)
+}
+
+interface WalletRepository {
     fun observeWallets(userId: String): Flow<List<Wallet>>
     suspend fun getAllWallets(): List<Wallet>
     suspend fun getWallet(id: String): Wallet?
