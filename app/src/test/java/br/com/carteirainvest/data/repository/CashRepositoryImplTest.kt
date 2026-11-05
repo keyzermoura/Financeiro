@@ -96,7 +96,7 @@ class CashRepositoryImplTest {
         private val rows = MutableStateFlow<List<CashTransactionEntity>>(emptyList())
 
         override fun observeByWallet(walletId: String): Flow<List<CashTransactionEntity>> =
-            rows.let { flow -> kotlinx.coroutines.flow.map(flow) { list -> list.filter { it.walletId == walletId } } }
+            rows.map { list -> list.filter { it.walletId == walletId } }
 
         override suspend fun getByWallet(walletId: String): List<CashTransactionEntity> =
             rows.value.filter { it.walletId == walletId }
