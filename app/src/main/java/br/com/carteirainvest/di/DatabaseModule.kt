@@ -3,6 +3,7 @@ package br.com.carteirainvest.di
 import android.content.Context
 import androidx.room.Room
 import br.com.carteirainvest.data.local.AppDatabase
+import br.com.carteirainvest.data.local.MIGRATION_1_2
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -17,7 +18,9 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): AppDatabase =
-        Room.databaseBuilder(context, AppDatabase::class.java, AppDatabase.NAME).build()
+        Room.databaseBuilder(context, AppDatabase::class.java, AppDatabase.NAME)
+            .addMigrations(MIGRATION_1_2)
+            .build()
 
     @Provides
     fun provideUserDao(database: AppDatabase) = database.userDao()
@@ -45,4 +48,10 @@ object DatabaseModule {
 
     @Provides
     fun provideExchangeRateDao(database: AppDatabase) = database.exchangeRateDao()
+
+    @Provides
+    fun provideCashTransactionDao(database: AppDatabase) = database.cashTransactionDao()
+
+    @Provides
+    fun provideFixedIncomeLotDao(database: AppDatabase) = database.fixedIncomeLotDao()
 }
