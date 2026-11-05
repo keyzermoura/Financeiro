@@ -43,7 +43,9 @@ class Migration1To2Test {
                             quantity TEXT NOT NULL,
                             unitPrice TEXT NOT NULL,
                             fees TEXT NOT NULL,
+                            dividendAmount TEXT,
                             date INTEGER NOT NULL,
+                            notes TEXT NOT NULL,
                             createdAt INTEGER NOT NULL
                         )
                         """.trimIndent(),
