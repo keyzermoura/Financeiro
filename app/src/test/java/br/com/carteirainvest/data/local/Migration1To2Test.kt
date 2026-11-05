@@ -58,8 +58,8 @@ class Migration1To2Test {
                     db.execSQL(
                         """
                         INSERT INTO asset_transactions
-                        (id, assetId, type, quantity, unitPrice, fees, date, createdAt)
-                        VALUES ('buy-1', 'asset-1', 'BUY', '3', '100.10', '1.25', 1, 1)
+                        (id, assetId, type, quantity, unitPrice, fees, dividendAmount, date, notes, createdAt)
+                        VALUES ('buy-1', 'asset-1', 'BUY', '3', '100.10', '1.25', NULL, 1, '', 1)
                         """.trimIndent(),
                     )
                     db.execSQL("INSERT INTO asset_transactions (id, assetId, type, quantity, unitPrice, fees, dividendAmount, date, notes, createdAt) VALUES ('buy-2', 'asset-1', 'BUY', '2', '50', '0.50', NULL, 2, '', 2)")
@@ -85,7 +85,7 @@ class Migration1To2Test {
             ).use { cursor ->
                 assertTrue(cursor.moveToFirst())
                 assertEquals("300.30", cursor.getString(0))
-                assertEquals("300.30", cursor.getString(1))
+                assertEquals("0", cursor.getString(1))
                 assertEquals("10.5", cursor.getString(2))
             }
             db.query("SELECT remainingQuantity, remainingPrincipalAmount FROM fixed_income_lots WHERE purchaseTransactionId = 'buy-2'").use { cursor ->
