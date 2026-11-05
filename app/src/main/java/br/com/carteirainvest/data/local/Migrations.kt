@@ -130,7 +130,7 @@ private fun migrateLegacyFixedIncomePurchases(database: SupportSQLiteDatabase) {
         """.trimIndent(),
     ).use { cursor ->
         val lotsByAsset = mutableMapOf<String, MutableList<LegacyLotState>>()
-        val indexes = (0 until cursor.columnCount).associateBy { cursor.getColumnName(it) }
+        val indexes = (0 until cursor.columnCount).associate { cursor.getColumnName(it) to it }
 
         while (cursor.moveToNext()) {
             fun string(name: String) = cursor.getString(indexes.getValue(name))
@@ -166,7 +166,6 @@ private fun migrateLegacyFixedIncomePurchases(database: SupportSQLiteDatabase) {
                 val salePrice = BigDecimal(string("unitPrice"))
                 val saleFees = BigDecimal(string("fees"))
                 var quantityToAllocate = quantity
-                var quantityAllocated = BigDecimal.ZERO
 
                 for (lot in lots) {
                     if (quantityToAllocate.signum() <= 0) break
