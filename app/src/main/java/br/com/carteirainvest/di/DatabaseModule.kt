@@ -54,4 +54,8 @@ object DatabaseModule {
 
     @Provides
     fun provideFixedIncomeLotDao(database: AppDatabase) = database.fixedIncomeLotDao()
+
+    @Provides
+    fun provideFixedIncomeRedemptionAllocationDao(database: AppDatabase) =
+        database.fixedIncomeRedemptionAllocationDao()
 }
