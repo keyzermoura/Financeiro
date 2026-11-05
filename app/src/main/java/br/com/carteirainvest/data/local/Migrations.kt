@@ -54,6 +54,7 @@ val MIGRATION_1_2 = object : Migration(1, 2) {
                 annualRate TEXT,
                 maturityDate INTEGER,
                 createdAt INTEGER NOT NULL,
+                isMigrated INTEGER NOT NULL,
                 PRIMARY KEY(id),
                 FOREIGN KEY(assetId) REFERENCES assets(id)
                     ON UPDATE NO ACTION ON DELETE CASCADE,
@@ -199,7 +200,6 @@ private fun migrateLegacyFixedIncomePurchases(database: SupportSQLiteDatabase) {
                         lot.remainingPrincipalAmount.subtract(principalAllocated)
                     updateLegacyLotBalance(database, lot)
                     quantityToAllocate = quantityToAllocate.subtract(allocated)
-                    quantityAllocated = quantityAllocated.add(allocated)
                 }
                 // If the legacy history contains an out-of-order/oversized sale,
                 // keep the original transaction untouched. The missing allocation
@@ -222,6 +222,7 @@ private fun insertLegacyLot(database: SupportSQLiteDatabase, lot: LegacyLotState
         if (lot.annualRate == null) putNull("annualRate") else put("annualRate", lot.annualRate)
         if (lot.maturityDate == null) putNull("maturityDate") else put("maturityDate", lot.maturityDate)
         put("createdAt", lot.createdAt)
+        put("isMigrated", 1)
     }
     database.insert("fixed_income_lots", 0, values)
 }
