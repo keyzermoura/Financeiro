@@ -8,6 +8,7 @@ import androidx.room.Upsert
 import br.com.carteirainvest.data.local.entity.AlertRuleEntity
 import br.com.carteirainvest.data.local.entity.CashTransactionEntity
 import br.com.carteirainvest.data.local.entity.FixedIncomeLotEntity
+import br.com.carteirainvest.data.local.entity.FixedIncomeRedemptionAllocationEntity
 import br.com.carteirainvest.data.local.entity.AssetEntity
 import br.com.carteirainvest.data.local.entity.ExchangeRateEntity
 import br.com.carteirainvest.data.local.entity.PortfolioSnapshotEntity
@@ -287,4 +288,19 @@ interface FixedIncomeLotDao {
 
     @Query("DELETE FROM fixed_income_lots WHERE id = :id")
     suspend fun delete(id: String)
+}
+
+@Dao
+interface FixedIncomeRedemptionAllocationDao {
+    @Query("SELECT * FROM fixed_income_redemption_allocations WHERE redemptionTransactionId = :transactionId ORDER BY id ASC")
+    suspend fun getByRedemptionTransaction(transactionId: String): List<FixedIncomeRedemptionAllocationEntity>
+
+    @Query("SELECT * FROM fixed_income_redemption_allocations WHERE lotId = :lotId ORDER BY createdAt ASC, id ASC")
+    suspend fun getByLot(lotId: String): List<FixedIncomeRedemptionAllocationEntity>
+
+    @Insert(onConflict = OnConflictStrategy.ABORT)
+    suspend fun insertAll(allocations: List<FixedIncomeRedemptionAllocationEntity>)
+
+    @Query("DELETE FROM fixed_income_redemption_allocations WHERE redemptionTransactionId = :transactionId")
+    suspend fun deleteByRedemptionTransaction(transactionId: String)
 }
