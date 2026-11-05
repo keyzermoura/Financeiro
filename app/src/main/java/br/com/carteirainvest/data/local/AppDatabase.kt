@@ -6,6 +6,7 @@ import androidx.room.TypeConverters
 import br.com.carteirainvest.data.local.dao.AlertDao
 import br.com.carteirainvest.data.local.dao.CashTransactionDao
 import br.com.carteirainvest.data.local.dao.FixedIncomeLotDao
+import br.com.carteirainvest.data.local.dao.FixedIncomeRedemptionAllocationDao
 import br.com.carteirainvest.data.local.dao.AssetDao
 import br.com.carteirainvest.data.local.dao.ExchangeRateDao
 import br.com.carteirainvest.data.local.dao.QuoteDao
@@ -17,6 +18,7 @@ import br.com.carteirainvest.data.local.dao.WalletDao
 import br.com.carteirainvest.data.local.entity.AlertRuleEntity
 import br.com.carteirainvest.data.local.entity.CashTransactionEntity
 import br.com.carteirainvest.data.local.entity.FixedIncomeLotEntity
+import br.com.carteirainvest.data.local.entity.FixedIncomeRedemptionAllocationEntity
 import br.com.carteirainvest.data.local.entity.AssetEntity
 import br.com.carteirainvest.data.local.entity.ExchangeRateEntity
 import br.com.carteirainvest.data.local.entity.PortfolioSnapshotEntity
@@ -39,6 +41,7 @@ import br.com.carteirainvest.data.local.entity.WalletEntity
         ExchangeRateEntity::class,
         CashTransactionEntity::class,
         FixedIncomeLotEntity::class,
+        FixedIncomeRedemptionAllocationEntity::class,
     ],
     version = 2,
     exportSchema = true,
@@ -56,6 +59,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun exchangeRateDao(): ExchangeRateDao
     abstract fun cashTransactionDao(): CashTransactionDao
     abstract fun fixedIncomeLotDao(): FixedIncomeLotDao
+    abstract fun fixedIncomeRedemptionAllocationDao(): FixedIncomeRedemptionAllocationDao
 
     companion object {
         const val NAME = "carteira_invest.db"
