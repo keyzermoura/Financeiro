@@ -18,7 +18,7 @@ interface AuthRepository {
     fun setBiometricEnabled(enabled: Boolean)
 }
 
-interface WalletRepository {
+interface CashRepository {\n    fun observeTransactions(walletId: String): Flow<List<CashTransaction>>\n    suspend fun getTransactions(walletId: String): List<CashTransaction>\n    suspend fun addTransaction(transaction: CashTransaction)\n}\n\ninterface WalletRepository {
     fun observeWallets(userId: String): Flow<List<Wallet>>
     suspend fun getAllWallets(): List<Wallet>
     suspend fun getWallet(id: String): Wallet?
