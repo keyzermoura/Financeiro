@@ -2,22 +2,18 @@ package br.com.carteirainvest.data.local
 
 import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory
-import androidx.room.testing.MigrationTestHelper
 import androidx.test.core.app.ApplicationProvider
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.sqlite.db.SupportSQLiteOpenHelper
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import org.junit.runner.RunWith
-import java.io.IOException
 
 /**
  * Migration-specific assertions are also exercised by Room's schema validation
  * when the generated version-2 schema is checked in.
  */
-@RunWith(AndroidJUnit4::class)
+@org.junit.runner.RunWith(org.robolectric.RobolectricTestRunner::class)
+@org.robolectric.annotation.Config(sdk = [35])
 class Migration1To2Test {
 
     @Test
@@ -87,6 +83,10 @@ class Migration1To2Test {
                 assertEquals("300.30", cursor.getString(0))
                 assertEquals("300.30", cursor.getString(1))
                 assertEquals("10.5", cursor.getString(2))
+            }
+            db.query("SELECT COUNT(*) FROM fixed_income_redemption_allocations").use { cursor ->
+                assertTrue(cursor.moveToFirst())
+                assertEquals(0, cursor.getInt(0))
             }
             db.query("SELECT COUNT(*) FROM asset_transactions").use { cursor ->
                 assertTrue(cursor.moveToFirst())
