@@ -248,6 +248,7 @@ data class FixedIncomeLotEntity(
     val annualRate: BigDecimal?,
     val maturityDate: LocalDate?,
     val createdAt: Long,
+    val isMigrated: Boolean = false,
 )
 
 @Entity(
