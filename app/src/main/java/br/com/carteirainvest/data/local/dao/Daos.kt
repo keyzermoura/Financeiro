@@ -6,6 +6,8 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Upsert
 import br.com.carteirainvest.data.local.entity.AlertRuleEntity
+import br.com.carteirainvest.data.local.entity.CashTransactionEntity
+import br.com.carteirainvest.data.local.entity.FixedIncomeLotEntity
 import br.com.carteirainvest.data.local.entity.AssetEntity
 import br.com.carteirainvest.data.local.entity.ExchangeRateEntity
 import br.com.carteirainvest.data.local.entity.PortfolioSnapshotEntity
@@ -237,4 +239,52 @@ interface ExchangeRateDao {
 
     @Upsert
     suspend fun upsertAll(rates: List<ExchangeRateEntity>)
+}
+
+@Dao
+interface CashTransactionDao {
+    @Query(
+        "SELECT * FROM cash_transactions WHERE walletId = :walletId " +
+            "ORDER BY date ASC, createdAt ASC, id ASC",
+    )
+    fun observeByWallet(walletId: String): Flow<List<CashTransactionEntity>>
+
+    @Query(
+        "SELECT * FROM cash_transactions WHERE walletId = :walletId " +
+            "ORDER BY date ASC, createdAt ASC, id ASC",
+    )
+    suspend fun getByWallet(walletId: String): List<CashTransactionEntity>
+
+    @Insert(onConflict = OnConflictStrategy.ABORT)
+    suspend fun insert(transaction: CashTransactionEntity)
+
+    @Query("DELETE FROM cash_transactions WHERE id = :id")
+    suspend fun delete(id: String)
+}
+
+@Dao
+interface FixedIncomeLotDao {
+    @Query(
+        "SELECT * FROM fixed_income_lots WHERE assetId = :assetId " +
+            "ORDER BY createdAt ASC, id ASC",
+    )
+    fun observeByAsset(assetId: String): Flow<List<FixedIncomeLotEntity>>
+
+    @Query(
+        "SELECT * FROM fixed_income_lots WHERE assetId = :assetId " +
+            "ORDER BY createdAt ASC, id ASC",
+    )
+    suspend fun getByAsset(assetId: String): List<FixedIncomeLotEntity>
+
+    @Query("SELECT * FROM fixed_income_lots WHERE purchaseTransactionId = :transactionId LIMIT 1")
+    suspend fun findByPurchaseTransaction(transactionId: String): FixedIncomeLotEntity?
+
+    @Insert(onConflict = OnConflictStrategy.ABORT)
+    suspend fun insert(lot: FixedIncomeLotEntity)
+
+    @Insert(onConflict = OnConflictStrategy.ABORT)
+    suspend fun insertAll(lots: List<FixedIncomeLotEntity>)
+
+    @Query("DELETE FROM fixed_income_lots WHERE id = :id")
+    suspend fun delete(id: String)
 }
