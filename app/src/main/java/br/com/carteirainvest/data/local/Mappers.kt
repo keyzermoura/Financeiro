@@ -1,6 +1,9 @@
 package br.com.carteirainvest.data.local
 
 import br.com.carteirainvest.data.local.entity.AlertRuleEntity
+import br.com.carteirainvest.data.local.entity.CashTransactionEntity
+import br.com.carteirainvest.data.local.entity.FixedIncomeLotEntity
+import br.com.carteirainvest.data.local.entity.FixedIncomeRedemptionAllocationEntity
 import br.com.carteirainvest.data.local.entity.AssetEntity
 import br.com.carteirainvest.data.local.entity.ExchangeRateEntity
 import br.com.carteirainvest.data.local.entity.PortfolioSnapshotEntity
@@ -10,6 +13,9 @@ import br.com.carteirainvest.data.local.entity.TransactionEntity
 import br.com.carteirainvest.data.local.entity.UserEntity
 import br.com.carteirainvest.data.local.entity.WalletEntity
 import br.com.carteirainvest.domain.model.AlertRule
+import br.com.carteirainvest.domain.model.CashTransaction
+import br.com.carteirainvest.domain.model.FixedIncomeLot
+import br.com.carteirainvest.domain.model.FixedIncomeRedemptionAllocation
 import br.com.carteirainvest.domain.model.Asset
 import br.com.carteirainvest.domain.model.ExchangeRate
 import br.com.carteirainvest.domain.model.PortfolioSnapshot
@@ -191,3 +197,73 @@ fun ExchangeRate.toEntity() = ExchangeRateEntity(
 )
 
 fun BigDecimal.toDbString(): String = toPlainString()
+
+fun CashTransactionEntity.toDomain() = CashTransaction(
+    id = id,
+    walletId = walletId,
+    type = type,
+    amount = amount,
+    date = date,
+    description = description,
+    createdAt = createdAt,
+)
+
+fun CashTransaction.toEntity() = CashTransactionEntity(
+    id = id,
+    walletId = walletId,
+    type = type,
+    amount = amount,
+    date = date,
+    description = description,
+    createdAt = createdAt,
+)
+
+fun FixedIncomeLotEntity.toDomain() = FixedIncomeLot(
+    id = id,
+    assetId = assetId,
+    purchaseTransactionId = purchaseTransactionId,
+    originalQuantity = originalQuantity,
+    remainingQuantity = remainingQuantity,
+    principalAmount = principalAmount,
+    remainingPrincipalAmount = remainingPrincipalAmount,
+    acquisitionFees = acquisitionFees,
+    annualRate = annualRate,
+    maturityDate = maturityDate,
+    createdAt = createdAt,
+)
+
+fun FixedIncomeLot.toEntity() = FixedIncomeLotEntity(
+    id = id,
+    assetId = assetId,
+    purchaseTransactionId = purchaseTransactionId,
+    originalQuantity = originalQuantity,
+    remainingQuantity = remainingQuantity,
+    principalAmount = principalAmount,
+    remainingPrincipalAmount = remainingPrincipalAmount,
+    acquisitionFees = acquisitionFees,
+    annualRate = annualRate,
+    maturityDate = maturityDate,
+    createdAt = createdAt,
+)
+
+fun FixedIncomeRedemptionAllocationEntity.toDomain() = FixedIncomeRedemptionAllocation(
+    id = id,
+    redemptionTransactionId = redemptionTransactionId,
+    lotId = lotId,
+    quantity = quantity,
+    principalAmount = principalAmount,
+    redemptionAmount = redemptionAmount,
+    fees = fees,
+    createdAt = createdAt,
+)
+
+fun FixedIncomeRedemptionAllocation.toEntity() = FixedIncomeRedemptionAllocationEntity(
+    id = id,
+    redemptionTransactionId = redemptionTransactionId,
+    lotId = lotId,
+    quantity = quantity,
+    principalAmount = principalAmount,
+    redemptionAmount = redemptionAmount,
+    fees = fees,
+    createdAt = createdAt,
+)
