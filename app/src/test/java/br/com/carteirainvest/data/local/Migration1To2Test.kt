@@ -80,13 +80,14 @@ class Migration1To2Test {
                 assertEquals(0, cursor.getInt(0))
             }
             db.query(
-                "SELECT principalAmount, remainingPrincipalAmount, annualRate " +
+                "SELECT principalAmount, remainingPrincipalAmount, annualRate, isMigrated " +
                     "FROM fixed_income_lots WHERE purchaseTransactionId = 'buy-1'",
             ).use { cursor ->
                 assertTrue(cursor.moveToFirst())
                 assertEquals("300.30", cursor.getString(0))
                 assertEquals("0", cursor.getString(1))
                 assertEquals("10.5", cursor.getString(2))
+                assertEquals(1, cursor.getInt(3))
             }
             db.query("SELECT remainingQuantity, remainingPrincipalAmount FROM fixed_income_lots WHERE purchaseTransactionId = 'buy-2'").use { cursor ->
                 assertTrue(cursor.moveToFirst())
