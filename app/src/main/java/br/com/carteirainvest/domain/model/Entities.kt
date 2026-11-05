@@ -5,7 +5,7 @@ import java.time.LocalDate
 
 enum class AssetType { STOCK, FII, ETF, CRYPTO, FIXED_INCOME }
 enum class TransactionType { BUY, SELL, DIVIDEND }
-enum class CashTransactionType { DEPOSIT, WITHDRAWAL }
+enum class CashTransactionType { OPENING_BALANCE, DEPOSIT, WITHDRAWAL }
 
 data class User(val id: String, val name: String, val email: String, val createdAt: Long)
 data class UserSession(val userId: String, val name: String, val email: String, val biometricEnabled: Boolean)
@@ -74,5 +74,17 @@ data class FixedIncomeLot(
     val acquisitionFees: BigDecimal,
     val annualRate: BigDecimal?,
     val maturityDate: LocalDate?,
+    val createdAt: Long,
+)
+
+/** Persisted link between a partial/full redemption and the lot it consumes. */
+data class FixedIncomeRedemptionAllocation(
+    val id: String,
+    val redemptionTransactionId: String,
+    val lotId: String,
+    val quantity: BigDecimal,
+    val principalAmount: BigDecimal,
+    val redemptionAmount: BigDecimal,
+    val fees: BigDecimal,
     val createdAt: Long,
 )
