@@ -62,6 +62,8 @@ class Migration1To2Test {
                         VALUES ('buy-1', 'asset-1', 'BUY', '3', '100.10', '1.25', 1, 1)
                         """.trimIndent(),
                     )
+                    db.execSQL("INSERT INTO asset_transactions (id, assetId, type, quantity, unitPrice, fees, dividendAmount, date, notes, createdAt) VALUES ('buy-2', 'asset-1', 'BUY', '2', '50', '0.50', NULL, 2, '', 2)")
+                    db.execSQL("INSERT INTO asset_transactions (id, assetId, type, quantity, unitPrice, fees, dividendAmount, date, notes, createdAt) VALUES ('sell-1', 'asset-1', 'SELL', '4', '120', '2', NULL, 3, '', 3)")
                 }
 
                 override fun onUpgrade(db: SupportSQLiteDatabase, oldVersion: Int, newVersion: Int) = Unit
@@ -86,13 +88,18 @@ class Migration1To2Test {
                 assertEquals("300.30", cursor.getString(1))
                 assertEquals("10.5", cursor.getString(2))
             }
+            db.query("SELECT remainingQuantity, remainingPrincipalAmount FROM fixed_income_lots WHERE purchaseTransactionId = 'buy-2'").use { cursor ->
+                assertTrue(cursor.moveToFirst())
+                assertEquals("1", cursor.getString(0))
+                assertEquals("50", cursor.getString(1))
+            }
             db.query("SELECT COUNT(*) FROM fixed_income_redemption_allocations").use { cursor ->
                 assertTrue(cursor.moveToFirst())
-                assertEquals(0, cursor.getInt(0))
+                assertEquals(2, cursor.getInt(0))
             }
             db.query("SELECT COUNT(*) FROM asset_transactions").use { cursor ->
                 assertTrue(cursor.moveToFirst())
-                assertEquals(1, cursor.getInt(0))
+                assertEquals(3, cursor.getInt(0))
             }
         } finally {
             helper.close()
