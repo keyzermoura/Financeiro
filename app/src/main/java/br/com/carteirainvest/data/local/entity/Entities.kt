@@ -6,6 +6,7 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import br.com.carteirainvest.domain.model.AlertType
 import br.com.carteirainvest.domain.model.AssetType
+import br.com.carteirainvest.domain.model.CashTransactionType
 import br.com.carteirainvest.domain.model.QuoteSource
 import br.com.carteirainvest.domain.model.TransactionType
 import java.math.BigDecimal
@@ -190,4 +191,61 @@ data class ExchangeRateEntity(
     val ask: BigDecimal,
     val percentChange: BigDecimal,
     val updatedAt: Long,
+)
+
+@Entity(
+    tableName = "cash_transactions",
+    foreignKeys = [
+        ForeignKey(
+            entity = WalletEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["walletId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+    indices = [Index(value = ["walletId", "date"])],
+)
+data class CashTransactionEntity(
+    @PrimaryKey val id: String,
+    val walletId: String,
+    val type: CashTransactionType,
+    val amount: BigDecimal,
+    val date: LocalDate,
+    val description: String,
+    val createdAt: Long,
+)
+
+@Entity(
+    tableName = "fixed_income_lots",
+    foreignKeys = [
+        ForeignKey(
+            entity = AssetEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["assetId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+        ForeignKey(
+            entity = TransactionEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["purchaseTransactionId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+    indices = [
+        Index(value = ["purchaseTransactionId"], unique = true),
+        Index("assetId"),
+    ],
+)
+data class FixedIncomeLotEntity(
+    @PrimaryKey val id: String,
+    val assetId: String,
+    val purchaseTransactionId: String,
+    val originalQuantity: BigDecimal,
+    val remainingQuantity: BigDecimal,
+    val principalAmount: BigDecimal,
+    val remainingPrincipalAmount: BigDecimal,
+    val acquisitionFees: BigDecimal,
+    val annualRate: BigDecimal?,
+    val maturityDate: LocalDate?,
+    val createdAt: Long,
 )
