@@ -239,3 +239,15 @@ private fun updateLegacyLotBalance(database: SupportSQLiteDatabase, lot: LegacyL
         arrayOf(lot.id),
     )
 }
+
+
+/** Adds an idempotent link from cash movements to their originating asset transaction. */
+val MIGRATION_2_3 = object : Migration(2, 3) {
+    override fun migrate(database: SupportSQLiteDatabase) {
+        database.execSQL("ALTER TABLE cash_transactions ADD COLUMN sourceTransactionId TEXT")
+        database.execSQL(
+            "CREATE UNIQUE INDEX IF NOT EXISTS index_cash_transactions_sourceTransactionId " +
+                "ON cash_transactions(sourceTransactionId)",
+        )
+    }
+}
