@@ -33,6 +33,7 @@ import br.com.carteirainvest.presentation.screen.assets.AssetDetailScreen
 import br.com.carteirainvest.presentation.screen.assets.AssetFormScreen
 import br.com.carteirainvest.presentation.screen.assets.AssetsScreen
 import br.com.carteirainvest.presentation.screen.dashboard.DashboardScreen
+import br.com.carteirainvest.presentation.screen.cash.CashScreen
 import br.com.carteirainvest.presentation.screen.dividends.DividendsScreen
 import br.com.carteirainvest.presentation.screen.exchange.ExchangeScreen
 import br.com.carteirainvest.presentation.screen.main.MainViewModel
@@ -145,6 +146,7 @@ fun MainScaffold(
                 composable(Routes.MORE) {
                     MoreScreen(
                         onOpenWallets = { navController.navigate(Routes.WALLETS) },
+                        onOpenCash = { navController.navigate(Routes.CASH) },
                         onOpenAlerts = { navController.navigate(Routes.ALERTS) },
                         onOpenExchange = { navController.navigate(Routes.EXCHANGE) },
                         onOpenSimulation = { navController.navigate(Routes.SIMULATION) },
