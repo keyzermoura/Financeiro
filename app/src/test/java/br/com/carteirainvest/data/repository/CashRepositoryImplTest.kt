@@ -19,7 +19,7 @@ import java.time.LocalDate
 class CashRepositoryImplTest {
 
     @Test
-    fun `allows opening balance and deposits while keeping wallet transactions isolated`() = runBlocking {
+    fun `allows opening balance and deposits while keeping wallet transactions isolated`() {\n        runBlocking {
         val dao = FakeCashTransactionDao()
         val repository = CashRepositoryImpl(dao, Dispatchers.Unconfined)
 
@@ -34,9 +34,10 @@ class CashRepositoryImplTest {
         ))
         assertEquals(1, repository.getTransactions("wallet-2").size)
     }
+    }
 
     @Test
-    fun `rejects a second opening balance`() = runBlocking {
+    fun `rejects a second opening balance`() {\n        runBlocking {
         val repository = CashRepositoryImpl(FakeCashTransactionDao(), Dispatchers.Unconfined)
         repository.addTransaction(transaction("wallet-1", CashTransactionType.OPENING_BALANCE, "100", "2026-01-01"))
 
@@ -48,9 +49,10 @@ class CashRepositoryImplTest {
             }
         }
     }
+    }
 
     @Test
-    fun `rejects withdrawal that makes chronological balance negative`() = runBlocking {
+    fun `rejects withdrawal that makes chronological balance negative`() {\n        runBlocking {
         val repository = CashRepositoryImpl(FakeCashTransactionDao(), Dispatchers.Unconfined)
         repository.addTransaction(transaction("wallet-1", CashTransactionType.OPENING_BALANCE, "100", "2026-01-01"))
 
@@ -62,9 +64,10 @@ class CashRepositoryImplTest {
             }
         }
     }
+    }
 
     @Test
-    fun `rejects retroactive deposit when an earlier withdrawal would remain uncovered`() = runBlocking {
+    fun `rejects retroactive deposit when an earlier withdrawal would remain uncovered`() {\n        runBlocking {
         val repository = CashRepositoryImpl(FakeCashTransactionDao(), Dispatchers.Unconfined)
         repository.addTransaction(transaction("wallet-1", CashTransactionType.OPENING_BALANCE, "100", "2026-01-01"))
         repository.addTransaction(transaction("wallet-1", CashTransactionType.DEPOSIT, "100", "2026-01-03"))
@@ -76,6 +79,7 @@ class CashRepositoryImplTest {
                 )
             }
         }
+    }
     }
 
     private fun transaction(
