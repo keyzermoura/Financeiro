@@ -67,7 +67,8 @@ import java.io.File
 
 @Composable
 fun MoreScreen(
-    onOpenWallets: () -> Unit,\n    onOpenCash: () -> Unit,
+    onOpenWallets: () -> Unit,
+    onOpenCash: () -> Unit,
     onOpenAlerts: () -> Unit,
     onOpenExchange: () -> Unit,
     onOpenSimulation: () -> Unit,
