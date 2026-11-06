@@ -47,13 +47,13 @@ class CashRepositoryImpl @Inject constructor(
             )
             var runningBalance = BigDecimal.ZERO
             candidate.forEach { entry ->
-                runningBalance = when (entry.type.name) {
-                    "OPENING_BALANCE", "DEPOSIT" -> runningBalance.add(entry.amount)
-                    "WITHDRAWAL" -> runningBalance.subtract(entry.amount)
-                    else -> runningBalance
+                runningBalance = when (entry.type) {
+                    CashTransactionType.OPENING_BALANCE,
+                    CashTransactionType.DEPOSIT -> runningBalance.add(entry.amount)
+                    CashTransactionType.WITHDRAWAL -> runningBalance.subtract(entry.amount)
                 }
                 if (runningBalance < BigDecimal.ZERO) {
-                    throw IllegalArgumentException(
+                    throw ValidationException(
                         "Esta operação deixaria o saldo de caixa negativo em ${entry.date}.",
                     )
                 }
