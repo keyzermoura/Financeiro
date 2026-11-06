@@ -24,6 +24,7 @@ object Routes {
     const val EXCHANGE = "exchange"
     const val SIMULATION = "simulation"
     const val WALLETS = "wallets"
+    const val CASH = "cash"
     const val SECURITY = "security"
 
     const val ASSET_DETAIL = "asset/{assetId}"
