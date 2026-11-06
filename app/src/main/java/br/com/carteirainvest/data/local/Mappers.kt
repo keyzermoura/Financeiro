@@ -206,6 +206,7 @@ fun CashTransactionEntity.toDomain() = CashTransaction(
     date = date,
     description = description,
     createdAt = createdAt,
+    sourceTransactionId = sourceTransactionId,
 )
 
 fun CashTransaction.toEntity() = CashTransactionEntity(
@@ -216,6 +217,7 @@ fun CashTransaction.toEntity() = CashTransactionEntity(
     date = date,
     description = description,
     createdAt = createdAt,
+    sourceTransactionId = sourceTransactionId,
 )
 
 fun FixedIncomeLotEntity.toDomain() = FixedIncomeLot(
