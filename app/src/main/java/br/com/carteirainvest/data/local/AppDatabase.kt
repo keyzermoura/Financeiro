@@ -43,7 +43,7 @@ import br.com.carteirainvest.data.local.entity.WalletEntity
         FixedIncomeLotEntity::class,
         FixedIncomeRedemptionAllocationEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
