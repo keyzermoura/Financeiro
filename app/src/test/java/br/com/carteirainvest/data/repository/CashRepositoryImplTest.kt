@@ -111,8 +111,15 @@ class CashRepositoryImplTest {
             rows.value.filter { it.walletId == walletId }
                 .sortedWith(compareBy<CashTransactionEntity> { it.date }.thenBy { it.createdAt }.thenBy { it.id })
 
+        override suspend fun findBySourceTransaction(sourceTransactionId: String): CashTransactionEntity? =
+            rows.value.firstOrNull { it.sourceTransactionId == sourceTransactionId }
+
         override suspend fun insert(transaction: CashTransactionEntity) {
             rows.value = rows.value + transaction
+        }
+
+        override suspend fun deleteBySourceTransaction(sourceTransactionId: String) {
+            rows.value = rows.value.filterNot { it.sourceTransactionId == sourceTransactionId }
         }
 
         override suspend fun delete(id: String) {
