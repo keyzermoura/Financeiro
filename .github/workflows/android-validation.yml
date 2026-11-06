@@ -11,7 +11,7 @@ permissions:
 
 concurrency:
   group: android-validation-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   validate:
@@ -43,7 +43,7 @@ jobs:
       - name: Grant permission to Gradle wrapper
         run: chmod +x gradlew
 
-      - name: Generate Room schema (version 2)
+      - name: Generate Room schema (version 3)
         run: ./gradlew --no-daemon :app:kspDebugKotlin
 
       - name: Run unit tests
