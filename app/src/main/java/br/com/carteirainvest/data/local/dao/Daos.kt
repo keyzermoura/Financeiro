@@ -256,8 +256,14 @@ interface CashTransactionDao {
     )
     suspend fun getByWallet(walletId: String): List<CashTransactionEntity>
 
+    @Query("SELECT * FROM cash_transactions WHERE sourceTransactionId = :sourceTransactionId LIMIT 1")
+    suspend fun findBySourceTransaction(sourceTransactionId: String): CashTransactionEntity?
+
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(transaction: CashTransactionEntity)
+
+    @Query("DELETE FROM cash_transactions WHERE sourceTransactionId = :sourceTransactionId")
+    suspend fun deleteBySourceTransaction(sourceTransactionId: String)
 
     @Query("DELETE FROM cash_transactions WHERE id = :id")
     suspend fun delete(id: String)
