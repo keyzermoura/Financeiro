@@ -60,6 +60,7 @@ data class CashTransaction(
     val date: LocalDate,
     val description: String,
     val createdAt: Long,
+    val sourceTransactionId: String? = null,
 )
 
 /** One application; rate and maturity are snapshotted at purchase. */
