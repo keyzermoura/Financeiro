@@ -203,7 +203,10 @@ data class ExchangeRateEntity(
             onDelete = ForeignKey.CASCADE,
         ),
     ],
-    indices = [Index(value = ["walletId", "date"])],
+    indices = [
+        Index(value = ["walletId", "date"]),
+        Index(value = ["sourceTransactionId"], unique = true),
+    ],
 )
 data class CashTransactionEntity(
     @PrimaryKey val id: String,
@@ -213,6 +216,7 @@ data class CashTransactionEntity(
     val date: LocalDate,
     val description: String,
     val createdAt: Long,
+    val sourceTransactionId: String? = null,
 )
 
 @Entity(
