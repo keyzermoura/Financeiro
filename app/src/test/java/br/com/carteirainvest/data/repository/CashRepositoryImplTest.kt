@@ -19,7 +19,8 @@ import java.time.LocalDate
 class CashRepositoryImplTest {
 
     @Test
-    fun `allows opening balance and deposits while keeping wallet transactions isolated`() {\n        runBlocking {
+    fun `allows opening balance and deposits while keeping wallet transactions isolated`() {
+        runBlocking {
         val dao = FakeCashTransactionDao()
         val repository = CashRepositoryImpl(dao, Dispatchers.Unconfined)
 
@@ -37,7 +38,8 @@ class CashRepositoryImplTest {
     }
 
     @Test
-    fun `rejects a second opening balance`() {\n        runBlocking {
+    fun `rejects a second opening balance`() {
+        runBlocking {
         val repository = CashRepositoryImpl(FakeCashTransactionDao(), Dispatchers.Unconfined)
         repository.addTransaction(transaction("wallet-1", CashTransactionType.OPENING_BALANCE, "100", "2026-01-01"))
 
@@ -52,7 +54,8 @@ class CashRepositoryImplTest {
     }
 
     @Test
-    fun `rejects withdrawal that makes chronological balance negative`() {\n        runBlocking {
+    fun `rejects withdrawal that makes chronological balance negative`() {
+        runBlocking {
         val repository = CashRepositoryImpl(FakeCashTransactionDao(), Dispatchers.Unconfined)
         repository.addTransaction(transaction("wallet-1", CashTransactionType.OPENING_BALANCE, "100", "2026-01-01"))
 
@@ -67,7 +70,8 @@ class CashRepositoryImplTest {
     }
 
     @Test
-    fun `rejects retroactive deposit when an earlier withdrawal would remain uncovered`() {\n        runBlocking {
+    fun `rejects retroactive deposit when an earlier withdrawal would remain uncovered`() {
+        runBlocking {
         val repository = CashRepositoryImpl(FakeCashTransactionDao(), Dispatchers.Unconfined)
         repository.addTransaction(transaction("wallet-1", CashTransactionType.OPENING_BALANCE, "100", "2026-01-01"))
         repository.addTransaction(transaction("wallet-1", CashTransactionType.DEPOSIT, "100", "2026-01-03"))
