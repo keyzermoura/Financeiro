@@ -5,6 +5,7 @@ import br.com.carteirainvest.data.report.PdfPortfolioReportExporter
 import br.com.carteirainvest.data.repository.AlertRepositoryImpl
 import br.com.carteirainvest.data.repository.AssetRepositoryImpl
 import br.com.carteirainvest.data.repository.AuthRepositoryImpl
+import br.com.carteirainvest.data.repository.CashRepositoryImpl
 import br.com.carteirainvest.data.repository.ExchangeRateRepositoryImpl
 import br.com.carteirainvest.data.repository.PortfolioRepositoryImpl
 import br.com.carteirainvest.data.repository.QuoteRepositoryImpl
@@ -13,6 +14,7 @@ import br.com.carteirainvest.domain.repository.AlertNotifier
 import br.com.carteirainvest.domain.repository.AlertRepository
 import br.com.carteirainvest.domain.repository.AssetRepository
 import br.com.carteirainvest.domain.repository.AuthRepository
+import br.com.carteirainvest.domain.repository.CashRepository
 import br.com.carteirainvest.domain.repository.ExchangeRateRepository
 import br.com.carteirainvest.domain.repository.PortfolioReportExporter
 import br.com.carteirainvest.domain.repository.PortfolioRepository
@@ -31,6 +33,10 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindAuthRepository(impl: AuthRepositoryImpl): AuthRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindCashRepository(impl: CashRepositoryImpl): CashRepository
 
     @Binds
     @Singleton
