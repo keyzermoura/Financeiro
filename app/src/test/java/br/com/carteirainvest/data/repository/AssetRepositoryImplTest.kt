@@ -221,7 +221,7 @@ class AssetRepositoryImplTest {
     )
 
     private fun assertDecimalEquals(expected: String, actual: BigDecimal?) {
-        assertTrue("O valor de caixa não foi criado", actual != null)
-        assertEquals(0, BigDecimal(expected).compareTo(actual))
+        val value = actual ?: throw AssertionError("O valor de caixa não foi criado")
+        assertEquals(0, BigDecimal(expected).compareTo(value))
     }
 }
