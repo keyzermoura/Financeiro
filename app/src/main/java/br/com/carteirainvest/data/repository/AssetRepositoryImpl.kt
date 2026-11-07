@@ -71,7 +71,7 @@ class AssetRepositoryImpl @Inject constructor(
                         throw ValidationException("A compra inicial deve pertencer ao ativo que está sendo cadastrado.")
                     }
                     transactionDao.insert(transaction.toEntity())
-                    synchronizePurchaseCash(transaction, asset)
+                    synchronizeInvestmentCash(transaction, asset)
                 }
             }
         }
@@ -123,7 +123,7 @@ class AssetRepositoryImpl @Inject constructor(
             val asset = assetDao.findById(transaction.assetId)?.toDomain()
                 ?: throw ValidationException("O ativo informado não foi encontrado.")
             transactionDao.insert(transaction.toEntity())
-            synchronizePurchaseCash(transaction, asset)
+            synchronizeInvestmentCash(transaction, asset)
         }
     }
 
@@ -143,7 +143,7 @@ class AssetRepositoryImpl @Inject constructor(
             )
             val asset = assetDao.findById(previous.assetId)?.toDomain()
                 ?: throw ValidationException("O ativo vinculado à transação não foi encontrado.")
-            synchronizePurchaseCash(persistedTransaction, asset)
+            synchronizeInvestmentCash(persistedTransaction, asset)
         }
     }
 
@@ -160,44 +160,49 @@ class AssetRepositoryImpl @Inject constructor(
         }
 
     /**
-     * Keeps the cash side of a BUY transaction in sync with its investment record.
-     * The source id makes the operation idempotent; the caller must execute this
-     * method inside the same Room transaction as the investment write.
+     * Synchronizes cash for BUY, SELL and DIVIDEND records.
+     * The caller runs this inside the same Room transaction as the investment write.
      */
-    private suspend fun synchronizePurchaseCash(transaction: Transaction, asset: Asset) {
+    private suspend fun synchronizeInvestmentCash(transaction: Transaction, asset: Asset) {
         val linkedEntry = cashTransactionDao.findBySourceTransaction(transaction.id)
-
-        if (transaction.type != TransactionType.BUY) {
-            if (linkedEntry != null) {
-                cashTransactionDao.deleteBySourceTransaction(transaction.id)
-            }
-            return
+        val cashType = when (transaction.type) {
+            TransactionType.BUY -> CashTransactionType.WITHDRAWAL
+            TransactionType.SELL, TransactionType.DIVIDEND -> CashTransactionType.DEPOSIT
         }
-
-        val totalCost = transaction.grossValue.add(transaction.fees)
-        if (totalCost.signum() <= 0) {
-            throw ValidationException("O valor total da compra deve ser maior que zero.")
+        val netAmount = when (transaction.type) {
+            TransactionType.BUY -> transaction.grossValue.add(transaction.fees)
+            TransactionType.SELL, TransactionType.DIVIDEND ->
+                transaction.grossValue.subtract(transaction.fees)
         }
-
+        if (netAmount.signum() <= 0) {
+            throw ValidationException(
+                when (transaction.type) {
+                    TransactionType.BUY -> "O valor total da compra deve ser maior que zero."
+                    TransactionType.SELL -> "O valor líquido da venda deve ser maior que zero."
+                    TransactionType.DIVIDEND -> "O valor líquido do rendimento deve ser maior que zero."
+                },
+            )
+        }
+        val label = when (transaction.type) {
+            TransactionType.BUY -> "Compra"
+            TransactionType.SELL -> "Venda"
+            TransactionType.DIVIDEND -> "Rendimento"
+        }
         val cashMovement = CashTransaction(
             id = linkedEntry?.id ?: UUID.randomUUID().toString(),
             walletId = asset.walletId,
-            type = CashTransactionType.WITHDRAWAL,
-            amount = totalCost,
+            type = cashType,
+            amount = netAmount,
             date = transaction.date,
-            description = "Compra de ${asset.ticker}",
+            description = "$label de ${asset.ticker}",
             createdAt = linkedEntry?.createdAt ?: transaction.createdAt,
             sourceTransactionId = transaction.id,
         )
-
         val currentWalletEntries = cashTransactionDao.getByWallet(asset.walletId)
             .filterNot { it.sourceTransactionId == transaction.id }
             .map { it.toDomain() }
         validateChronologicalCashBalance(currentWalletEntries + cashMovement)
-
-        if (linkedEntry != null) {
-            cashTransactionDao.deleteBySourceTransaction(transaction.id)
-        }
+        if (linkedEntry != null) cashTransactionDao.deleteBySourceTransaction(transaction.id)
         cashTransactionDao.insert(cashMovement.toEntity())
     }
 

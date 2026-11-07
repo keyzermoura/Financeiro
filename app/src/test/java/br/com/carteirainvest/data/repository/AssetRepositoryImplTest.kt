@@ -89,6 +89,42 @@ class AssetRepositoryImplTest {
     }
 
     @Test
+    fun salesAndDividendsCreateNetCashDepositsAndStaySynchronizedOnUpdateAndDelete() = runBlocking {
+        val database = createDatabase()
+        try {
+            seedWallet(database)
+            database.cashTransactionDao().insert(
+                cashEntry("opening-1", CashTransactionType.OPENING_BALANCE, "10", "2026-01-01", 1),
+            )
+            val repository = repository(database)
+            repository.createAsset(asset(), null)
+            val sale = purchase("sell-1", "2", "30", "1.50", "2026-01-02", 2)
+                .copy(type = TransactionType.SELL)
+            repository.addTransaction(sale)
+            val saleCash = database.cashTransactionDao().findBySourceTransaction("sell-1")
+            assertEquals(CashTransactionType.DEPOSIT, saleCash?.type)
+            assertDecimalEquals("58.50", saleCash?.amount)
+
+            val dividend = purchase("dividend-1", "0", "0", "0.50", "2026-01-03", 3)
+                .copy(type = TransactionType.DIVIDEND, dividendAmount = BigDecimal("12.00"))
+            repository.addTransaction(dividend)
+            val dividendCash = database.cashTransactionDao().findBySourceTransaction("dividend-1")
+            assertEquals(CashTransactionType.DEPOSIT, dividendCash?.type)
+            assertDecimalEquals("11.50", dividendCash?.amount)
+
+            repository.updateTransaction(sale.copy(unitPrice = BigDecimal("35"), fees = BigDecimal("2")))
+            val updatedSale = database.cashTransactionDao().getByWallet("wallet-1")
+                .filter { it.sourceTransactionId == "sell-1" }
+            assertEquals(1, updatedSale.size)
+            assertDecimalEquals("68", updatedSale.single().amount)
+            repository.deleteTransaction("dividend-1")
+            assertNull(database.cashTransactionDao().findBySourceTransaction("dividend-1"))
+        } finally {
+            database.close()
+        }
+    }
+
+    @Test
     fun retroactivePurchaseThatMakesLaterCashBalanceNegativeRollsBackInvestmentAndCash() = runBlocking {
         val database = createDatabase()
         try {
