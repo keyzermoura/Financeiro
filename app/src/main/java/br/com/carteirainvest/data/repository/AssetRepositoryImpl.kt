@@ -5,18 +5,24 @@ import androidx.room.withTransaction
 import br.com.carteirainvest.core.util.IoDispatcher
 import br.com.carteirainvest.data.local.AppDatabase
 import br.com.carteirainvest.data.local.dao.AssetDao
+import br.com.carteirainvest.data.local.dao.CashTransactionDao
 import br.com.carteirainvest.data.local.dao.TransactionDao
 import br.com.carteirainvest.data.local.toDomain
 import br.com.carteirainvest.data.local.toEntity
 import br.com.carteirainvest.domain.exception.ValidationException
 import br.com.carteirainvest.domain.model.Asset
 import br.com.carteirainvest.domain.model.AssetType
+import br.com.carteirainvest.domain.model.CashTransaction
+import br.com.carteirainvest.domain.model.CashTransactionType
 import br.com.carteirainvest.domain.model.Transaction
+import br.com.carteirainvest.domain.model.TransactionType
 import br.com.carteirainvest.domain.repository.AssetRepository
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import java.math.BigDecimal
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -25,6 +31,7 @@ class AssetRepositoryImpl @Inject constructor(
     private val database: AppDatabase,
     private val assetDao: AssetDao,
     private val transactionDao: TransactionDao,
+    private val cashTransactionDao: CashTransactionDao,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : AssetRepository {
 
@@ -56,7 +63,10 @@ class AssetRepositoryImpl @Inject constructor(
             try {
                 database.withTransaction {
                     assetDao.insert(asset.toEntity())
-                    firstTransaction?.let { transactionDao.insert(it.toEntity()) }
+                    firstTransaction?.let { transaction ->
+                        transactionDao.insert(transaction.toEntity())
+                        synchronizePurchaseCash(transaction, asset)
+                    }
                 }
             } catch (error: SQLiteConstraintException) {
                 throw ValidationException("Já existe um ativo com este ticker nesta carteira.")
@@ -81,7 +91,12 @@ class AssetRepositoryImpl @Inject constructor(
     }
 
     override suspend fun deleteAsset(id: String) = withContext(ioDispatcher) {
-        assetDao.delete(id)
+        database.withTransaction {
+            transactionDao.getByAsset(id).forEach { transaction ->
+                cashTransactionDao.deleteBySourceTransaction(transaction.id)
+            }
+            assetDao.delete(id)
+        }
     }
 
     override fun observeTransactions(assetId: String): Flow<List<Transaction>> =
@@ -101,28 +116,115 @@ class AssetRepositoryImpl @Inject constructor(
         }
 
     override suspend fun addTransaction(transaction: Transaction) = withContext(ioDispatcher) {
-        transactionDao.insert(transaction.toEntity())
+        database.withTransaction {
+            val asset = assetDao.findById(transaction.assetId)?.toDomain()
+                ?: throw ValidationException("O ativo informado não foi encontrado.")
+            transactionDao.insert(transaction.toEntity())
+            synchronizePurchaseCash(transaction, asset)
+        }
     }
 
     override suspend fun updateTransaction(transaction: Transaction) = withContext(ioDispatcher) {
-        transactionDao.update(
-            id = transaction.id,
-            type = transaction.type,
-            quantity = transaction.quantity,
-            unitPrice = transaction.unitPrice,
-            fees = transaction.fees,
-            dividendAmount = transaction.dividendAmount,
-            date = transaction.date,
-            notes = transaction.notes,
-        )
+        database.withTransaction {
+            val previous = transactionDao.findById(transaction.id) ?: return@withTransaction
+            val persistedTransaction = transaction.copy(assetId = previous.assetId)
+            transactionDao.update(
+                id = persistedTransaction.id,
+                type = persistedTransaction.type,
+                quantity = persistedTransaction.quantity,
+                unitPrice = persistedTransaction.unitPrice,
+                fees = persistedTransaction.fees,
+                dividendAmount = persistedTransaction.dividendAmount,
+                date = persistedTransaction.date,
+                notes = persistedTransaction.notes,
+            )
+            val asset = assetDao.findById(previous.assetId)?.toDomain()
+                ?: throw ValidationException("O ativo vinculado à transação não foi encontrado.")
+            synchronizePurchaseCash(persistedTransaction, asset)
+        }
     }
 
     override suspend fun deleteTransaction(id: String) = withContext(ioDispatcher) {
-        transactionDao.delete(id)
+        database.withTransaction {
+            cashTransactionDao.deleteBySourceTransaction(id)
+            transactionDao.delete(id)
+        }
     }
 
     override suspend fun countAssetsByType(walletId: String, type: AssetType): Int =
         withContext(ioDispatcher) {
             assetDao.getByWallet(walletId).count { it.type == type }
         }
+
+    /**
+     * Keeps the cash side of a BUY transaction in sync with its investment record.
+     * The source id makes the operation idempotent; the caller must execute this
+     * method inside the same Room transaction as the investment write.
+     */
+    private suspend fun synchronizePurchaseCash(transaction: Transaction, asset: Asset) {
+        val linkedEntry = cashTransactionDao.findBySourceTransaction(transaction.id)
+
+        if (transaction.type != TransactionType.BUY) {
+            if (linkedEntry != null) {
+                cashTransactionDao.deleteBySourceTransaction(transaction.id)
+            }
+            return
+        }
+
+        val totalCost = transaction.grossValue.add(transaction.fees)
+        if (totalCost.signum() <= 0) {
+            throw ValidationException("O valor total da compra deve ser maior que zero.")
+        }
+
+        val cashMovement = CashTransaction(
+            id = linkedEntry?.id ?: UUID.randomUUID().toString(),
+            walletId = asset.walletId,
+            type = CashTransactionType.WITHDRAWAL,
+            amount = totalCost,
+            date = transaction.date,
+            description = "Compra de ${asset.ticker}",
+            createdAt = linkedEntry?.createdAt ?: transaction.createdAt,
+            sourceTransactionId = transaction.id,
+        )
+
+        val currentWalletEntries = cashTransactionDao.getByWallet(asset.walletId)
+            .filterNot { it.sourceTransactionId == transaction.id }
+            .map { it.toDomain() }
+        validateChronologicalCashBalance(currentWalletEntries + cashMovement)
+
+        if (linkedEntry != null) {
+            cashTransactionDao.deleteBySourceTransaction(transaction.id)
+        }
+        cashTransactionDao.insert(cashMovement.toEntity())
+    }
+
+    private fun validateChronologicalCashBalance(entries: List<CashTransaction>) {
+        var runningBalance = BigDecimal.ZERO
+        var openingBalanceCount = 0
+
+        entries.sortedWith(
+            compareBy<CashTransaction> { it.date }
+                .thenBy { it.createdAt }
+                .thenBy { it.id },
+        ).forEach { entry ->
+            if (entry.type == CashTransactionType.OPENING_BALANCE) {
+                openingBalanceCount += 1
+                if (openingBalanceCount > 1) {
+                    throw ValidationException("O saldo inicial desta carteira já foi cadastrado.")
+                }
+            }
+
+            runningBalance = when (entry.type) {
+                CashTransactionType.OPENING_BALANCE,
+                CashTransactionType.DEPOSIT -> runningBalance.add(entry.amount)
+                CashTransactionType.WITHDRAWAL -> runningBalance.subtract(entry.amount)
+            }
+
+            if (runningBalance < BigDecimal.ZERO) {
+                throw ValidationException(
+                    "Esta operação deixaria o saldo de caixa negativo em ${entry.date}.",
+                )
+            }
+        }
+    }
 }
