@@ -18,6 +18,9 @@ jobs:
     name: Room schema, unit tests and debug build
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    # Segredo opcional; sem ele, a BRAPI pode recusar consultas autenticadas.
+    env:
+      BRAPI_TOKEN: ${{ secrets.BRAPI_TOKEN }}
 
     steps:
       - name: Checkout
