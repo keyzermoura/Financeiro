@@ -138,6 +138,44 @@ class AssetRepositoryImplTest {
         }
     }
 
+    @Test
+    fun initialPurchaseWithInsufficientCashRollsBackAssetAndInvestmentTransaction() = runBlocking {
+        val database = createDatabase()
+        try {
+            seedWallet(database)
+            database.cashTransactionDao().insert(
+                cashEntry(
+                    id = "opening-1",
+                    type = CashTransactionType.OPENING_BALANCE,
+                    amount = "50",
+                    date = "2026-01-01",
+                    createdAt = 1,
+                ),
+            )
+            val error = runCatching {
+                repository(database).createAsset(
+                    asset(),
+                    purchase(
+                        id = "buy-initial-failed",
+                        quantity = "1",
+                        unitPrice = "60",
+                        fees = "2",
+                        date = "2026-01-02",
+                        createdAt = 2,
+                    ),
+                )
+            }.exceptionOrNull()
+
+            assertTrue(error is ValidationException)
+            assertNull(database.assetDao().findById("asset-1"))
+            assertNull(database.transactionDao().findById("buy-initial-failed"))
+            assertNull(database.cashTransactionDao().findBySourceTransaction("buy-initial-failed"))
+            assertEquals(1, database.cashTransactionDao().getByWallet("wallet-1").size)
+        } finally {
+            database.close()
+        }
+    }
+
     private fun createDatabase(): AppDatabase {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         return Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java)
