@@ -60,16 +60,19 @@ class AssetRepositoryImpl @Inject constructor(
 
     override suspend fun createAsset(asset: Asset, firstTransaction: Transaction?) {
         withContext(ioDispatcher) {
-            try {
-                database.withTransaction {
+            database.withTransaction {
+                try {
                     assetDao.insert(asset.toEntity())
-                    firstTransaction?.let { transaction ->
-                        transactionDao.insert(transaction.toEntity())
-                        synchronizePurchaseCash(transaction, asset)
-                    }
+                } catch (error: SQLiteConstraintException) {
+                    throw ValidationException("Já existe um ativo com este ticker nesta carteira.")
                 }
-            } catch (error: SQLiteConstraintException) {
-                throw ValidationException("Já existe um ativo com este ticker nesta carteira.")
+                firstTransaction?.let { transaction ->
+                    if (transaction.assetId != asset.id) {
+                        throw ValidationException("A compra inicial deve pertencer ao ativo que está sendo cadastrado.")
+                    }
+                    transactionDao.insert(transaction.toEntity())
+                    synchronizePurchaseCash(transaction, asset)
+                }
             }
         }
     }
